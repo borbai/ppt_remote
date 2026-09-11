@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PPT Remote - Apresentador Inteligente</title>
+  <meta name="description" content="Controle remoto de apresentações PowerPoint via Supabase Realtime para celular e desktop.">
+  <meta name="theme-color" content="#0d1117">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Supabase JS Client via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header com status e conexão -->
+    <header class="top-bar">
+      <div class="brand">
+        <div class="logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </div>
+        <span class="brand-name">PPT <span>Remote</span></span>
+      </div>
+
+      <div class="header-right">
+        <div id="connectionBadge" class="connection-badge disconnected" onclick="toggleConfigModal()">
+          <span class="status-dot"></span>
+          <span id="connectionText">Desconectado</span>
+        </div>
+        <button id="settingsBtn" class="icon-btn" onclick="toggleConfigModal()" title="Configurações">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Slide Info Card & Timer -->
+    <div class="presentation-card">
+      <div class="card-header">
+        <div class="pres-name-wrapper">
+          <span class="pres-label">Apresentação:</span>
+          <span id="presName" class="pres-name">Aguardando PowerPoint...</span>
+        </div>
+        <div class="slide-badge">
+          <span id="currentSlideNum">0</span>
+          <span class="slash">/</span>
+          <span id="totalSlidesNum">0</span>
+        </div>
+      </div>
+
+      <!-- Barra de progresso dos slides -->
+      <div class="progress-bar-container">
+        <div id="slideProgressBar" class="progress-bar" style="width: 0%"></div>
+      </div>
+
+      <!-- Título do slide ativo -->
+      <div class="slide-title-wrapper">
+        <span class="slide-title-label">Slide Ativo:</span>
+        <h2 id="slideTitle" class="slide-title">Nenhuma apresentação em exibição</h2>
+      </div>
+
+      <!-- Cronômetro de Apresentação -->
+      <div class="timer-bar">
+        <div class="timer-display">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span id="timerText">00:00</span>
+        </div>
+        <div class="timer-actions">
+          <button id="timerToggleBtn" class="timer-btn" onclick="toggleTimer()">Iniciar</button>
+          <button id="timerResetBtn" class="timer-btn" onclick="resetTimer()">Zerar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botões Principais de Controle (Touch & Ergonomia Mobile) -->
+    <main class="primary-controls">
+      <button id="btnPrev" class="action-btn prev-btn" onclick="onPrevClick()" aria-label="Slide Anterior">
+        <div class="btn-content">
+          <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <span class="btn-text">Anterior</span>
+        </div>
+        <span class="keyboard-hint">Voltar</span>
+      </button>
+
+      <button id="btnNext" class="action-btn next-btn" onclick="onNextClick()" aria-label="Próximo Slide">
+        <div class="btn-content">
+          <span class="btn-text">Próximo</span>
+          <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </div>
+        <span class="keyboard-hint">Avançar</span>
+      </button>
+    </main>
+
+    <!-- Ações Secundárias (Black screen, Iniciar, etc.) -->
+    <section class="quick-actions">
+      <button id="btnBlack" class="tool-btn" onclick="onBlackClick()">
+        <span class="tool-icon">⬛</span>
+        <span>Tela Preta</span>
+      </button>
+
+      <button id="btnWhite" class="tool-btn" onclick="onWhiteClick()">
+        <span class="tool-icon">⬜</span>
+        <span>Tela Branca</span>
+      </button>
+
+      <button id="btnJump" class="tool-btn" onclick="openJumpModal()">
+        <span class="tool-icon">🎯</span>
+        <span>Pular P/</span>
+      </button>
+
+      <button id="btnStartStop" class="tool-btn" onclick="onStartStopClick()">
+        <span class="tool-icon" id="startStopIcon">▶️</span>
+        <span id="startStopText">Apresentar</span>
+      </button>
+    </section>
+
+    <!-- Drawer de Anotações do Orador (Teleprompter) -->
+    <section class="notes-section">
+      <div class="notes-header">
+        <div class="notes-title-group">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <h3>Anotações do Orador</h3>
+        </div>
+        <div class="font-sizer">
+          <button onclick="changeFontSize(-1)" title="Diminuir fonte">A-</button>
+          <button onclick="changeFontSize(1)" title="Aumentar fonte">A+</button>
+        </div>
+      </div>
+      <div class="notes-body">
+        <p id="speakerNotesText" class="notes-content">Nenhuma anotação para o slide atual.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal de Configuração de Sala e Supabase -->
+  <div id="configModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Configuração de Conexão</h3>
+        <button class="close-btn" onclick="toggleConfigModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="input-group">
+          <label for="roomIdInput">Código da Sala (Room ID):</label>
+          <input type="text" id="roomIdInput" placeholder="ex: ppt-12345" autocomplete="off" autocapitalize="none">
+          <small>Código exibido na tela do app no seu PC com Windows.</small>
+        </div>
+
+        <div class="input-group">
+          <label for="supabaseUrlInput">Supabase Project URL:</label>
+          <input type="url" id="supabaseUrlInput" placeholder="https://xyz.supabase.co" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+          <label for="supabaseKeyInput">Supabase Anon Key:</label>
+          <input type="password" id="supabaseKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." autocomplete="off">
+        </div>
+
+        <div id="connectionErrorMsg" class="error-msg hidden"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="secondary-btn" onclick="toggleConfigModal()">Cancelar</button>
+        <button class="primary-btn" onclick="saveAndConnect()">Conectar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Salto de Slide -->
+  <div id="jumpModal" class="modal-overlay hidden">
+    <div class="modal-content small-modal">
+      <div class="modal-header">
+        <h3>Ir para o Slide</h3>
+        <button class="close-btn" onclick="closeJumpModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="jump-input-wrapper">
+          <input type="number" id="jumpSlideInput" min="1" max="999" placeholder="1">
+          <span id="jumpMaxSlides">de ?</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary-btn" onclick="closeJumpModal()">Cancelar</button>
+        <button class="primary-btn" onclick="executeJump()">Ir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Script da aplicação -->
+  <script src="app.js"></script>
+</body>
+</html>
