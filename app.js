@@ -159,15 +159,45 @@ function handleStateUpdate(state) {
 
   presentationState = { ...presentationState, ...state };
 
-  // Atualiza Nome da Apresentação
+  // Atualiza Seletor ou Nome da Apresentação
   const presNameEl = document.getElementById('presName');
-  if (state.presentation_name) {
-    presNameEl.innerText = state.presentation_name;
-    presNameEl.title = state.presentation_name;
-  } else if (state.is_connected) {
-    presNameEl.innerText = 'PowerPoint aberto (sem apresentação ativa)';
+  const presSelectEl = document.getElementById('presSelect');
+  const presentations = state.presentations || [];
+
+  if (presentations.length > 1) {
+    presNameEl.classList.add('hidden');
+    presSelectEl.classList.remove('hidden');
+
+    // Reconstrói as opções caso tenham mudado
+    const currentOptions = Array.from(presSelectEl.options).map(o => o.value).join('|');
+    const newOptions = presentations.map(p => p.name).join('|');
+
+    if (currentOptions !== newOptions) {
+      presSelectEl.innerHTML = '';
+      presentations.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.name;
+        opt.textContent = `${p.name} ${p.is_presenting ? '🟢 (Tela cheia)' : ''}`;
+        presSelectEl.appendChild(opt);
+      });
+    }
+
+    const selectedName = state.selected_presentation || state.presentation_name;
+    if (selectedName && presSelectEl.value !== selectedName) {
+      presSelectEl.value = selectedName;
+    }
   } else {
-    presNameEl.innerText = 'Aguardando PowerPoint...';
+    presSelectEl.classList.add('hidden');
+    presNameEl.classList.remove('hidden');
+
+    if (state.presentation_name) {
+      presNameEl.innerText = state.presentation_name;
+      presNameEl.title = state.presentation_name;
+    } else if (state.is_connected) {
+      presNameEl.innerText = 'PowerPoint aberto (sem apresentação ativa)';
+    } else {
+      presNameEl.innerText = 'Aguardando PowerPoint...';
+    }
   }
 
   // Contador de Slides
@@ -195,6 +225,9 @@ function handleStateUpdate(state) {
     titleEl.innerText = 'Nenhuma apresentação em tela cheia';
   }
 
+  // Miniaturas e Detecção de Animação nos Botões
+  updateButtonsWithThumbsAndAnim(state);
+
   // Anotações do Orador
   const notesEl = document.getElementById('speakerNotesText');
   if (state.speaker_notes && state.speaker_notes.trim()) {
@@ -203,7 +236,7 @@ function handleStateUpdate(state) {
     notesEl.innerText = 'Sem anotações para este slide.';
   }
 
-  // Estado dos botões de ação
+  // Estado dos botões de ação secundária
   const btnBlack = document.getElementById('btnBlack');
   const btnWhite = document.getElementById('btnWhite');
   const btnStartStop = document.getElementById('btnStartStop');
@@ -229,6 +262,100 @@ function handleStateUpdate(state) {
     startStopIcon.innerText = '▶️';
     startStopText.innerText = 'Apresentar';
   }
+}
+
+// Atualiza visual dos botões de avançar/voltar com miniaturas e animações
+function updateButtonsWithThumbsAndAnim(state) {
+  const btnPrev = document.getElementById('btnPrev');
+  const prevThumbImg = document.getElementById('prevThumbImg');
+  const prevBadge = document.getElementById('prevBadge');
+  const prevTitle = document.getElementById('prevBtnTitle');
+  const prevSub = document.getElementById('prevBtnSub');
+
+  const btnNext = document.getElementById('btnNext');
+  const nextThumbImg = document.getElementById('nextThumbImg');
+  const nextBadge = document.getElementById('nextBadge');
+  const nextTitle = document.getElementById('nextBtnTitle');
+  const nextSub = document.getElementById('nextBtnSub');
+
+  const currentSlide = state.current_slide || 0;
+  const totalSlides = state.total_slides || 0;
+
+  // Botão Anterior
+  if (state.prev_is_animation) {
+    prevBadge.classList.remove('hidden');
+    prevBadge.innerText = '↩️ Desfazer Animação';
+    prevTitle.innerText = 'Voltar';
+    prevSub.innerText = 'Passo Anterior';
+  } else {
+    if (currentSlide > 1) {
+      prevBadge.classList.remove('hidden');
+      prevBadge.innerText = `Slide ${currentSlide - 1}`;
+      prevTitle.innerText = 'Anterior';
+      prevSub.innerText = `Voltar para Slide ${currentSlide - 1}`;
+    } else {
+      prevBadge.classList.add('hidden');
+      prevTitle.innerText = 'Anterior';
+      prevSub.innerText = 'Início';
+    }
+  }
+
+  if (state.prev_thumb) {
+    prevThumbImg.src = state.prev_thumb;
+    prevThumbImg.classList.remove('hidden');
+  } else {
+    prevThumbImg.classList.add('hidden');
+  }
+
+  // Botão Próximo
+  if (state.next_is_animation) {
+    // DESTACAR QUE O PRÓXIMO CLIQUE AVANÇA UMA ANIMAÇÃO
+    btnNext.classList.add('is-animation');
+    nextBadge.classList.remove('hidden');
+
+    const step = (state.animation_current_step || 0) + 1;
+    const totalSteps = state.animation_total_steps || 1;
+    nextBadge.innerText = `⚡ Próxima: Animação (${step}/${totalSteps})`;
+
+    nextTitle.innerText = '⚡ Animação';
+    nextSub.innerText = `Avançar Passo ${step} de ${totalSteps}`;
+
+    // Mostra o slide atual onde a animação será exibida
+    const animThumb = state.current_thumb || state.next_thumb;
+    if (animThumb) {
+      nextThumbImg.src = animThumb;
+      nextThumbImg.classList.remove('hidden');
+    } else {
+      nextThumbImg.classList.add('hidden');
+    }
+  } else {
+    btnNext.classList.remove('is-animation');
+
+    if (currentSlide < totalSlides) {
+      nextBadge.classList.remove('hidden');
+      nextBadge.innerText = `Slide ${currentSlide + 1}`;
+      nextTitle.innerText = 'Próximo';
+      nextSub.innerText = `Avançar Slide ${currentSlide + 1}`;
+    } else {
+      nextBadge.classList.add('hidden');
+      nextTitle.innerText = 'Próximo';
+      nextSub.innerText = 'Fim da Apresentação';
+    }
+
+    if (state.next_thumb) {
+      nextThumbImg.src = state.next_thumb;
+      nextThumbImg.classList.remove('hidden');
+    } else {
+      nextThumbImg.classList.add('hidden');
+    }
+  }
+}
+
+// Troca de Apresentação disparada pelo Seletor Web
+function onPresentationSelected(selectedName) {
+  if (!selectedName) return;
+  sendCommand('select_presentation', { name: selectedName });
+  showToast(`Apresentação selecionada: ${selectedName}`);
 }
 
 // Ações dos Botões

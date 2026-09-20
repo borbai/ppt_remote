@@ -199,12 +199,25 @@ body {
   overflow: hidden;
 }
 
+.pres-name-wrapper {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-width: 280px;
+}
+
 .pres-label {
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
+}
+
+.pres-selector-container {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
 }
 
 .pres-name {
@@ -217,6 +230,28 @@ body {
   max-width: 260px;
 }
 
+.pres-select {
+  background: rgba(15, 23, 42, 0.85);
+  color: #93c5fd;
+  border: 1px solid rgba(147, 197, 253, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  outline: none;
+  cursor: pointer;
+  max-width: 250px;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.pres-select:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.4);
+}
+
 .slide-badge {
   background: rgba(99, 102, 241, 0.15);
   border: 1px solid rgba(99, 102, 241, 0.3);
@@ -226,6 +261,7 @@ body {
   font-size: 1.1rem;
   font-weight: 700;
   color: #a5b4fc;
+  flex-shrink: 0;
 }
 
 .slide-badge .slash {
@@ -314,12 +350,12 @@ body {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* Controles Primários (Touch Mobile) */
+/* Controles Primários (Touch Mobile com Miniaturas) */
 .primary-controls {
   display: grid;
   grid-template-columns: 1fr 1.6fr;
   gap: 12px;
-  height: 160px;
+  height: 175px;
 }
 
 .action-btn {
@@ -329,15 +365,125 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
-  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  padding: 12px;
+  overflow: hidden;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
   touch-action: manipulation;
+  z-index: 1;
 }
 
 .action-btn:active {
   transform: scale(0.96);
+}
+
+/* Miniatura de Fundo do Botão */
+.thumb-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease, opacity 0.3s ease;
+  display: block;
+}
+
+.action-btn:hover .thumb-img {
+  transform: scale(1.05);
+}
+
+.thumb-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.45) 0%,
+    rgba(15, 23, 42, 0.75) 50%,
+    rgba(15, 23, 42, 0.94) 100%
+  );
+  border-radius: inherit;
+}
+
+/* Badges e Status dentro dos botões */
+.btn-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+#prevBadge {
+  background: rgba(30, 41, 59, 0.9);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+#nextBadge {
+  background: rgba(37, 99, 235, 0.9);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Destaque Exclusivo quando a Próxima Ação for uma Animação */
+.next-btn.is-animation {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.45), 0 6px 20px rgba(0, 0, 0, 0.4);
+  animation: pulse-border-anim 1.8s infinite alternate ease-in-out;
+}
+
+.next-btn.is-animation #nextBadge {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.7);
+  animation: pulse-glow 1.5s infinite;
+}
+
+.next-btn.is-animation .thumb-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(30, 27, 75, 0.35) 0%,
+    rgba(20, 20, 40, 0.75) 50%,
+    rgba(15, 15, 30, 0.95) 100%
+  );
+}
+
+@keyframes pulse-border-anim {
+  0% {
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.35), 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 28px rgba(245, 158, 11, 0.65), 0 6px 25px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
 }
 
 .prev-btn {
@@ -364,32 +510,47 @@ body {
 .btn-content {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  z-index: 2;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-labels {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .prev-btn .btn-text {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 .next-btn .btn-text {
-  font-size: 1.55rem;
+  font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.01em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 .btn-arrow {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
 .keyboard-hint {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  opacity: 0.6;
-  margin-top: 4px;
+  opacity: 0.75;
+  margin-top: 2px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 
 /* Ações Rápidas */
